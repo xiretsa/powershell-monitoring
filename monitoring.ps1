@@ -43,7 +43,7 @@ if($config.ContainsKey("serveurs") -and ($config.serveurs.count -ge 1)) {
                 $statut = "KO"
                 $statutApplication = "KO"
             }
-            $monitorings.Add(@{"name" = "mémoire"; "value" = "${freeMemory} % libre (${taille} Go)"}) | Out-Null
+            $monitorings.Add(@{"name" = "mémoire"; "value" = "${freeMemory} % libre (${taille} Go) => $statut"}) | Out-Null
             $mail += "<tr><td>mémoire</td><td>${freeMemory} % libre (${taille} Go)</td><td>$statut</td></tr>"
         } catch {
             $statut = "KO"
