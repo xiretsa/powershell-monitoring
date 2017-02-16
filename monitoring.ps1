@@ -106,7 +106,10 @@ if($config.ContainsKey("restcall") -and ($config.restcall.count -ge 1)) {
     foreach($restcall in $config.restcall) {
         $statut = "OK"
         Try {
+            $StartDate=(Get-Date)
             $response = Invoke-RestMethod -Uri $restcall.url -Method Get
+            $EndDate=(Get-Date)
+            $duration = $(New-TimeSpan -Start $StartDate -End $EndDate).TotalSeconds
             switch ($restcall.response.type) {
                 "property" {  
                     if((![bool]($response.PSobject.Properties.name -match $restcall.response.name)) -or (!$response.PSobject.Properties.Match($restcall.response.name).Value -eq $restcall.response.value)) {
@@ -125,12 +128,16 @@ if($config.ContainsKey("restcall") -and ($config.restcall.count -ge 1)) {
                     $statutApplication = "KO"    
                 }
             }
+            if($duration -gt $restcall.maxDurationSeconds) {
+                $statut = "KO"
+                $statutApplication = "KO"
+            }
         } Catch {
             $statut = "KO"
             $statutApplication = "KO"    
         }
-        $mail += "<li>$($restcall.name) : $statut</li>"
-        $monitorings.Add(@{"name" = $restcall.name; "value" = $statut}) | Out-Null
+        $mail += "<li>$($restcall.name) ($duration secondes) : $statut</li>"
+        $monitorings.Add(@{"name" = "$($restcall.name) ($duration secondes)"; "value" = $statut}) | Out-Null
     }
     $mail += "<ul>"
     $facts.Add(@{"title" = "Test disponibilité de services REST"; "facts" = $monitorings}) | Out-Null
