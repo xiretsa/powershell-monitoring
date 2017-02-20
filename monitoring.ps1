@@ -6,6 +6,7 @@ $config = Get-Yaml -FromFile (Resolve-Path $ConfigurationFile)
 
 $statutApplication = "OK"
 $mail = "<h1>Anomalie détectée sur l'application $nomApplication en environnement $environnementApplication</h1>"
+$slackText = ""
 $serveurApplication = ""
 [System.Collections.ArrayList] $facts = @()
 
@@ -26,11 +27,13 @@ if($config.ContainsKey("serveurs") -and ($config.serveurs.count -ge 1)) {
                     $statutApplication = "KO"
                 }
                 $monitorings.Add(@{"name" = "disque ${disque}"; "value" = "${percent} % libre (${taille} Go) => $statut"}) | Out-Null
+                $slackText += "disque ${disque} : ${percent} % libre (${taille} Go) => $statut`n"
                 $mail += "<tr><td>disque ${disque}</td><td>${percent} % libre (${taille} Go)</td><td>$statut</td></tr>"
             } catch {
                 $statut = "KO"
                 $statutApplication = "KO"              
                 $monitorings.Add(@{"name" = "disque ${disque}"; "value" = "Impossible de se connecter au serveur"}) | Out-Null
+                $slackText += "disque ${disque} : Impossible de se connecter au serveur => $statut`n"
                 $mail += "<tr><td>disque ${disque}</td><td>Impossible de se connecter au serveur</td><td>$statut</td></tr>"
             }
         }
@@ -44,11 +47,13 @@ if($config.ContainsKey("serveurs") -and ($config.serveurs.count -ge 1)) {
                 $statutApplication = "KO"
             }
             $monitorings.Add(@{"name" = "mémoire"; "value" = "${freeMemory} % libre (${taille} Go) => $statut"}) | Out-Null
+            $slackText += "mémoire : ${freeMemory} % libre (${taille} Go) => $statut`n"
             $mail += "<tr><td>mémoire</td><td>${freeMemory} % libre (${taille} Go)</td><td>$statut</td></tr>"
         } catch {
             $statut = "KO"
             $statutApplication = "KO"
             $monitorings.Add(@{"name" = "mémoire"; "value" = "Impossible de se connecter au serveur"}) | Out-Null
+            $slackText += "mémoire : Impossible de se connecter au serveur => $statut`n"
             $mail += "<tr><td>mémoire</td><td>Impossible de se connecter au serveur</td><td>$statut</td></tr>"
         }
 
@@ -89,9 +94,11 @@ if($config.ContainsKey("serveurs") -and ($config.serveurs.count -ge 1)) {
                     }
                 }
                 $monitorings.Add(@{"name" = "Processus $($process.name)"; "value" = "$($getProcess.count) en cours (doit être $($process.comparator) à $($process.number)) => $statut"}) | Out-Null
+                $slackText += "Processus $($process.name) : $($getProcess.count) en cours (doit être $($process.comparator) à $($process.number)) => $statut`n"
                 $mail += "<tr><td>Processus $($process.name)</td><td>$($getProcess.count) en cours (doit être $($process.comparator) à $($process.number))</td><td>$statut</td></tr>"
             } catch {
                 $monitorings.Add(@{"name" = "Processus $($process.name)"; "value" = "Impossible de se connecter au serveur"}) | Out-Null
+                $slackText += "Processus $($process.name) : Impossible de se connecter au serveur => $statut`n"
                 $mail += "<tr><td>Processus $($process.name)</td><td>Impossible de se connecter au serveur</td><td>$statut</td></tr>"
             }
         }
@@ -137,14 +144,18 @@ if($config.ContainsKey("restcall") -and ($config.restcall.count -ge 1)) {
             $statutApplication = "KO"    
         }
         $mail += "<li>$($restcall.name) ($duration secondes) : $statut</li>"
+        $slackText += "$($restcall.name) ($duration secondes) : $statut`n"
         $monitorings.Add(@{"name" = "$($restcall.name) ($duration secondes)"; "value" = $statut}) | Out-Null
     }
     $mail += "<ul>"
     $facts.Add(@{"title" = "Test disponibilité de services REST"; "facts" = $monitorings}) | Out-Null
 }
 
+$slackIcon = ":x:"
 if($statutApplication -eq "OK") {
     $mail = $mail.Replace("Anomalie", "Aucune anomalie")
+    $slackText = $slackText.Replace("Anomalie", "Aucune anomalie")
+    $slackIcon = ":white_check_mark:"
 }
 
 $requestBody = @{
@@ -161,6 +172,11 @@ $requestBody = @{
     }
     "sections" = $facts
     "corps-mail" = $mail
+    "slack" = @{
+        "slack-url" = $config.urlslack
+        "slack-username" = "$($config.application.nom) $statutApplication ($($config.application.environnement))"
+        "slack-text" = $slackText
+        "slack-icon-emoji"= $slackIcon
+    }
 }
-
 Invoke-RestMethod -Uri $config.urlmicrosoftflow -Method Post -ContentType "Application/json" -Body $(ConvertTo-Json $requestBody -Depth 10)
