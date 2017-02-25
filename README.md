@@ -1,4 +1,4 @@
-# power-monitoring
+# powershell-monitoring
 
 ## Description
 
