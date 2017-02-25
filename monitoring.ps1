@@ -5,7 +5,7 @@ $ConfigurationFile="$PSScriptRoot\configuration.yml"
 $config = Get-Yaml -FromFile (Resolve-Path $ConfigurationFile)
 
 $statutApplication = "OK"
-$mail = "<h1>Anomalie dÃ©tectÃ©e sur l'application $nomApplication en environnement $environnementApplication</h1>"
+$mail = "<h1>Anomalie détectée sur l'application $nomApplication en environnement $environnementApplication</h1>"
 $slackText = ""
 $serveurApplication = ""
 [System.Collections.ArrayList] $facts = @()
@@ -14,7 +14,7 @@ if($config.ContainsKey("serveurs") -and ($config.serveurs.count -ge 1)) {
     foreach($serveur in $config.serveurs) {
         [System.Collections.ArrayList] $monitorings = @()
         $serveurApplication += " $($serveur.name)"
-        $mail += "<table><caption>Objets monitorÃ©s sur le serveur $($serveur.name)</caption><thead><tr><th>Nom</th><th>valeur</th><th>statut<th></tr></thead><tbody>"
+        $mail += "<table><caption>Objets monitorés sur le serveur $($serveur.name)</caption><thead><tr><th>Nom</th><th>valeur</th><th>statut<th></tr></thead><tbody>"
 
         foreach($disque in $serveur.disques) {
             try {
@@ -46,15 +46,15 @@ if($config.ContainsKey("serveurs") -and ($config.serveurs.count -ge 1)) {
                 $statut = "KO"
                 $statutApplication = "KO"
             }
-            $monitorings.Add(@{"name" = "mÃ©moire"; "value" = "${freeMemory} % libre (${taille} Go) => $statut"}) | Out-Null
-            $slackText += "mÃ©moire : ${freeMemory} % libre (${taille} Go) => $statut`n"
-            $mail += "<tr><td>mÃ©moire</td><td>${freeMemory} % libre (${taille} Go)</td><td>$statut</td></tr>"
+            $monitorings.Add(@{"name" = "mémoire"; "value" = "${freeMemory} % libre (${taille} Go) => $statut"}) | Out-Null
+            $slackText += "mémoire : ${freeMemory} % libre (${taille} Go) => $statut`n"
+            $mail += "<tr><td>mémoire</td><td>${freeMemory} % libre (${taille} Go)</td><td>$statut</td></tr>"
         } catch {
             $statut = "KO"
             $statutApplication = "KO"
-            $monitorings.Add(@{"name" = "mÃ©moire"; "value" = "Impossible de se connecter au serveur"}) | Out-Null
-            $slackText += "mÃ©moire : Impossible de se connecter au serveur => $statut`n"
-            $mail += "<tr><td>mÃ©moire</td><td>Impossible de se connecter au serveur</td><td>$statut</td></tr>"
+            $monitorings.Add(@{"name" = "mémoire"; "value" = "Impossible de se connecter au serveur"}) | Out-Null
+            $slackText += "mémoire : Impossible de se connecter au serveur => $statut`n"
+            $mail += "<tr><td>mémoire</td><td>Impossible de se connecter au serveur</td><td>$statut</td></tr>"
         }
 
         foreach($process in $serveur.processus) {
@@ -93,9 +93,9 @@ if($config.ContainsKey("serveurs") -and ($config.serveurs.count -ge 1)) {
                         }
                     }
                 }
-                $monitorings.Add(@{"name" = "Processus $($process.name)"; "value" = "$($getProcess.count) en cours (doit Ãªtre $($process.comparator) Ã  $($process.number)) => $statut"}) | Out-Null
-                $slackText += "Processus $($process.name) : $($getProcess.count) en cours (doit Ãªtre $($process.comparator) Ã  $($process.number)) => $statut`n"
-                $mail += "<tr><td>Processus $($process.name)</td><td>$($getProcess.count) en cours (doit Ãªtre $($process.comparator) Ã  $($process.number))</td><td>$statut</td></tr>"
+                $monitorings.Add(@{"name" = "Processus $($process.name)"; "value" = "$($getProcess.count) en cours (doit être $($process.comparator) à $($process.number)) => $statut"}) | Out-Null
+                $slackText += "Processus $($process.name) : $($getProcess.count) en cours (doit être $($process.comparator) à $($process.number)) => $statut`n"
+                $mail += "<tr><td>Processus $($process.name)</td><td>$($getProcess.count) en cours (doit être $($process.comparator) à $($process.number))</td><td>$statut</td></tr>"
             } catch {
                 $monitorings.Add(@{"name" = "Processus $($process.name)"; "value" = "Impossible de se connecter au serveur"}) | Out-Null
                 $slackText += "Processus $($process.name) : Impossible de se connecter au serveur => $statut`n"
@@ -103,7 +103,7 @@ if($config.ContainsKey("serveurs") -and ($config.serveurs.count -ge 1)) {
             }
         }
         $mail += "</tbody></table>"
-        $facts.Add(@{"title" = "Objets monitorÃ©s de $($serveur.name)"; "facts" = $monitorings}) | Out-Null
+        $facts.Add(@{"title" = "Objets monitorés de $($serveur.name)"; "facts" = $monitorings}) | Out-Null
     }
 }
 
@@ -148,7 +148,7 @@ if($config.ContainsKey("restcall") -and ($config.restcall.count -ge 1)) {
         $monitorings.Add(@{"name" = "$($restcall.name) ($duration secondes)"; "value" = $statut}) | Out-Null
     }
     $mail += "<ul>"
-    $facts.Add(@{"title" = "Test disponibilitÃ© de services REST"; "facts" = $monitorings}) | Out-Null
+    $facts.Add(@{"title" = "Test disponibilité de services REST"; "facts" = $monitorings}) | Out-Null
 }
 
 $slackIcon = ":x:"
